@@ -571,6 +571,12 @@ func validateTemplateUsage(roleManifest *RoleManifest) validation.ErrorList {
 	// See also 'GetVariablesForRole' (mustache.go), and LoadManifest (caller, this file)
 	declaredConfigs := MakeMapOfVariables(roleManifest)
 
+	// Fissile provides some configuration variables by itself, see
+	// --> scripts/dockerfiles/run.sh, add them to prevent them from being reported as errors.
+	// The code here has to match the list of variables there.
+	declaredConfigs["IP_ADDRESS"] = &ConfigurationVariable{Name: "IP_ADDRESS"}
+	declaredConfigs["DNS_RECORD_NAME"] = &ConfigurationVariable{Name: "DNS_RECORD_NAME"}
+
 	// Iterate over all roles, jobs, templates, extract the used
 	// variables. Report all without a declaration.
 
