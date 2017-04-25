@@ -122,6 +122,7 @@ type ConfigurationVariable struct {
 	Default     interface{}                     `yaml:"default"`
 	Description string                          `yaml:"description"`
 	Generator   *ConfigurationVariableGenerator `yaml:"generator"`
+	Private     bool                            `yaml:"private,omitempty"`
 }
 
 // CVMap is a map from variable name to ConfigurationVariable, for
@@ -484,11 +485,11 @@ func validateVariableSorting(variables ConfigurationVariableSlice) validation.Er
 	return allErrs
 }
 
-// validateVariableUsage tests whether all parameters are used in a template or not.
-// It reports all variables which are not used by at least one template.
-//
-// ATTENTION: This will mis-report any variables which are used only
-// in scripts, but not in templates.
+// validateVariableUsage tests whether all parameters are used in a
+// template or not.  It reports all variables which are not used by at
+// least one template.  An exception are the variables marked with
+// `private: true`. These are not reported.  Use this to declare
+// variables used only in the various scripts and not in templates.
 func validateVariableUsage(roleManifest *RoleManifest) validation.ErrorList {
 	allErrs := validation.ErrorList{}
 
@@ -553,9 +554,13 @@ func validateVariableUsage(roleManifest *RoleManifest) validation.ErrorList {
 	}
 
 	// We have only the unused variables left in the set. Report
-	// them.
+	// those which are not private.
 
-	for cv := range unusedConfigs {
+	for cv, cvar := range unusedConfigs {
+		if cvar.Private {
+			continue
+		}
+
 		allErrs = append(allErrs, validation.NotFound("configuration.variables",
 			fmt.Sprintf("No templates using '%s'", cv)))
 	}
